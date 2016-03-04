@@ -11,12 +11,13 @@ usage() {
 }
 
 get_changes() {
-	changes=$(git diff --name-only $1)
+	local ref=$1
+	local changes=$(git diff --name-only $ref)
 
 	if [ -z "${changes// }" ]; then
 		# no changes, go back one commit
-		$1="$1~1"
-		changes=$(get_changes $1)
+		ref="$1~1"
+		changes=$(get_changes $ref)
 	fi
 
 	echo "$changes"
