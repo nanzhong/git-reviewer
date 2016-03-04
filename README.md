@@ -1,6 +1,6 @@
 # Git Reviewer
 
-`git-reviewer` is a get extension that helps you figure out a reasonable code reviewer for changes based on most who most recently also touched the files that have been changed.
+`git-reviewer` is a git extension that helps you figure out a reasonable code reviewer for changes based on most who most recently also touched the files that have been changed.
 
 ## Install
 
