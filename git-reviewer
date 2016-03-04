@@ -1,0 +1,65 @@
+#!/usr/bin/env sh
+
+version() {
+    echo "reviewer git plugin v0.0.1"
+    echo
+}
+
+usage() {
+    echo "usage: git reviewer [ref]"
+    echo
+}
+
+get_changes() {
+	changes=$(git diff --name-only $1)
+
+	if [ -z "${changes// }" ]; then
+		# no changes, go back one commit
+		$1="$1~1"
+		changes=$(get_changes $1)
+	fi
+
+	echo "$changes"
+}
+
+main() {
+	case "$1" in
+		-v)        version; exit;;
+		--version) version; exit;;
+		-h)        usage; exit;;
+		--help)    usage; exit;;
+	esac
+
+	# check if repo has commits
+	error=$(git rev-parse HEAD > /dev/null 2>&1)
+	echo "$error" | grep 'unknown revision or path'
+	if [ $? != 0 ]; then
+	    echo 'No commits to examine.'
+	    exit
+	fi
+
+	ref=$1
+	if [ -z $ref ]; then
+		ref="HEAD~1"
+	fi
+	
+	changes=$(get_changes $ref)
+	changes=$(
+		echo "$changes" | \
+		xargs -n1 -I % git blame -e % $ref 2> /dev/null | \
+		sed "s/^[^(]*(<\([^\>]*\)>.*$/\1/p" | \
+		sort | uniq -c | sort -nr
+	)
+	
+	total_lines=$(
+		echo "$changes" | \
+		awk '{ SUM += $1} END { print SUM }'
+	)
+	
+	echo "Top 3 authors of the files that have been changed:"
+	echo "$changes" | \
+	awk -v total="$total_lines" '{sum = $1 / total * 100; printf "%3d%s %s\n", int(sum), "%", $2}' | \
+	head -n 3
+}
+
+main "$@"
