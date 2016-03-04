@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-
 version() {
     echo "reviewer git plugin v0.0.1"
     echo
@@ -8,19 +7,6 @@ version() {
 usage() {
     echo "usage: git reviewer [ref]"
     echo
-}
-
-get_changes() {
-	local ref=$1
-	local changes=$(git diff --name-only $ref)
-
-	if [ -z "${changes// }" ]; then
-		# no changes, go back one commit
-		ref="$1~1"
-		changes=$(get_changes $ref)
-	fi
-
-	echo "$changes"
 }
 
 main() {
@@ -34,16 +20,32 @@ main() {
 	# check if repo has commits
 	git rev-parse HEAD > /dev/null 2>&1
 	if [ $? != 0 ]; then
-	    echo 'No commits to examine.'
-	    exit
+		echo 'No commits to examine.'
+		exit
 	fi
 
-	ref=$1
-	if [ -z $ref ]; then
-		ref="HEAD"
+	# check if repo only has 1 commit
+	git rev-parse HEAD~1 > /dev/null 2>&1
+	if [ $? != 0 ]; then
+		changes=$(git ls-tree --name-only -r HEAD)
+	else
+		ref=$1
+		if [ -z $ref ]; then
+			ref="HEAD"
+		fi
+
+		changes=$(git diff --name-only $ref)
+		if [ -z "${changes// }" ]; then
+			# no changes, go back one commit
+			ref="$ref~1"
+		fi
+
+		changes=$(git diff --name-only $ref)
 	fi
-	
-	changes=$(get_changes $ref)
+
+
+echo $ref
+
 	changes=$(
 		echo "$changes" | \
 		xargs -n1 -I % git blame -e % $ref 2> /dev/null | \
@@ -57,12 +59,12 @@ main() {
 	)
 
 	if [ $total_lines -eq 0 ]; then
-	    echo "Only new files have been added, unable to determine a reviewer."
+		echo "Only new files have been added, unable to determine a reviewer."
 	else
-	    echo "Top 3 authors of the files that have been changed:"
-	    echo "$changes" | \
-		awk -v total="$total_lines" '{sum = $1 / total * 100; printf "%4d%s %s\n", int(sum), "%", $2}' | \
-		head -n 3
+		echo "Top 3 authors of the files that have been changed:"
+		echo "$changes" | \
+		    awk -v total="$total_lines" '{sum = $1 / total * 100; printf "%4d%s %s\n", int(sum), "%", $2}' | \
+		    head -n 3
 	fi
 }
 
