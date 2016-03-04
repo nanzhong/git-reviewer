@@ -55,11 +55,15 @@ main() {
 		echo "$changes" | \
 		awk '{ SUM += $1} END { print SUM }'
 	)
-	
-	echo "Top 3 authors of the files that have been changed:"
-	echo "$changes" | \
-	awk -v total="$total_lines" '{sum = $1 / total * 100; printf "%4d%s %s\n", int(sum), "%", $2}' | \
-	head -n 3
+
+	if [ $total_lines -eq 0 ]; then
+	    echo "Only new files have been added, unable to determine a reviewer."
+	else
+	    echo "Top 3 authors of the files that have been changed:"
+	    echo "$changes" | \
+		awk -v total="$total_lines" '{sum = $1 / total * 100; printf "%4d%s %s\n", int(sum), "%", $2}' | \
+		head -n 3
+	fi
 }
 
 main "$@"
