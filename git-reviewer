@@ -43,9 +43,6 @@ main() {
 		changes=$(git diff --name-only $ref)
 	fi
 
-
-echo $ref
-
 	changes=$(
 		echo "$changes" | \
 		xargs -n1 -I % git blame -e % $ref 2> /dev/null | \
